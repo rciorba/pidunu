@@ -1,7 +1,7 @@
 all: build
 
 build:
-	-gcc -Wall -std=c99 -o grim *.c
+	-gcc -Wall -std=c99 -o grim *.c -static
 
 .PHONY : clean
 clean:
