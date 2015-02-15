@@ -1,18 +1,34 @@
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <errno.h>
 
 /*
 Do we care about the return code of the subprocess?
 Do we need to do anything about stdout/stderr?
  */
+pid_t g_child_pid = 0;
 
 
-int pid_one(int child_pid) {
+static void sigint(int signo) {
+  if (g_child_pid > 1) {
+    kill(g_child_pid, SIGINT);
+  }
+  signal(SIGINT, sigint); // re-registr the signal
+}
+
+void setup_signals(pid_t child_pid){
+  g_child_pid = child_pid;
+  signal(SIGINT, sigint);
+}
+
+int pid_one(pid_t child_pid) {
   int status;
   pid_t pid;
+  setup_signals(child_pid);
   /* printf("%d\t pid_one\n", getpid()); */
   while(1) {
     pid = wait(&status);
