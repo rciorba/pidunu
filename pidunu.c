@@ -8,8 +8,14 @@
 
 #define DEBUG 1
 
-#define debug_print(fmt, ...) \
-  do { if (DEBUG) printf(fmt, __VA_ARGS__); fflush(NULL);} while (0)
+#define debug_print(fmt, ...)                   \
+  do {                                          \
+    if (DEBUG) {                                \
+      fprintf(stderr, "%d:pidunu:", getpid());  \
+      fprintf(stderr, fmt, __VA_ARGS__);        \
+      fflush(NULL);                             \
+    }                                           \
+  } while (0)
 
 pid_t g_child_pid = 0;
 
@@ -29,15 +35,14 @@ int pid_one(pid_t child_pid) {
   int status;
   pid_t pid;
   setup_signals(child_pid);
-  debug_print("%d\t pid_one\n", getpid());
+  debug_print("%s\n", "pid_one");
   while(1) {
     pid = wait(&status);
     if (pid == child_pid){
       // the spawned child just terminated
-      debug_print("child died: %d\n", pid);
+      debug_print("child_died:%d\n", pid);
       return 0;
     }
-    /* debug_print("died: %d\n", pid); */
   }
 }
 
@@ -46,23 +51,23 @@ void execute(int argc, char** argv) {
     return;
   char* cmd = argv[1];
   char** args = argv+1;
-  debug_print("%d\t %s ", getpid(), cmd);
+  debug_print("exec:%s\n", cmd);
   if (execv(cmd, args) == -1) {
     fprintf(stderr, "failed to exec %s, errno is %d\n", cmd, errno);
   }
 }
 
 int main(int argc, char** argv) {
-  debug_print("%d\t main\n", getpid());
+  debug_print("%s", "main\n");
   pid_t pid = fork();
   if (pid<0) {
     fprintf(stderr, "failed to fork, errno: %d\n", errno);
     return -1;
   } else if (pid > 0) {
-    debug_print("%d\t pid unu\n", getpid());
+    debug_print("child_pid:%d\n", pid);
     return pid_one(pid);
   } else if (pid == 0) {
-    debug_print("%d\t pid 0\n", getpid());
+    debug_print("fork=>0:%d\n", getpid());
     execute(argc, argv);
     return -128; // program should have called exec and we should never get here
   }
