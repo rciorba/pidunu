@@ -1,5 +1,14 @@
 ## Pidunu - a trivial init process, for use in Docker containers.
 
+
+### How to use it
+Simply add pidunu to all your docker containers, and make it run your desired command:
+
+    CMD ["/path/to/my/binary", "arg1", "arg2"]
+    becomes
+    ADD pidunu /usr/bin/pidunu
+    CMD ["/usr/bin/pidunu", "/path/to/my/binary", "arg1", "arg2"]
+
 ### What does pidunu do?
 Pidunu does one thing and one thing only: it will start one process, and reap
 any children untill the spawned child exits, at wich point it will exit as well.
@@ -12,14 +21,18 @@ together with pidunu.
 
 ### Why is this useful?
 Basically to avoid zombie processes in your containers.
+
 Any process that exits, still gets tracked by the kernel until it's parrent
-calls wait, this ensures the parent can find out about the return code of exited
-subprocesses. Untill that happens the process is said to be in a Zombie state.
+calls wait (called reaping). This ensures the parent can find out about the return
+code of exited subprocesses. Untill reaping happens the process is said to be in a
+Zombie state.
+
 If your process spawns a child process, and that process spawns it's own children
 and exits before they terminate, those children are inherited by PID1.
-On traditional *nixe PID1 has the special responsibillity of calling wait on any
-child. When using Docker, traditionally your process will be the first one spawned,
-thus becoming PID1 for your container.
+On *nixe PID1 has the special responsibillity of calling wait on any ingerited child.
+When using Docker, whatever command you specified as the entry point will be the
+first one spawned thus becoming PID1 for your container.
+
 I sugest you read this great explanation:
 http://blog.phusion.nl/2015/01/20/docker-and-the-pid-1-zombie-reaping-problem/
 
@@ -32,6 +45,8 @@ for yourself.
 ### Building from source
 
     make
+
+The resulting executable is statically linked for maximum portabillity.
 
 ### Running the tests
 The tests are written using the pytest framework and the docker python bindings.
