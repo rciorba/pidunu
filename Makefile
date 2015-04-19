@@ -8,7 +8,7 @@ build:
 debug:
 	-gcc -g -D_DEBUG -Wall -std=c99 -o pidunu_dbg *.c -static
 
-test: build
+test: debug
 	py.test --capture=no
 
 clean:
