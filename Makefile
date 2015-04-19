@@ -1,10 +1,18 @@
+.PHONY : clean test
+
 all: build
 
 build:
 	-gcc -Wall -std=c99 -o pidunu *.c -static
 
-.PHONY : clean
+debug:
+	-gcc -g -D_DEBUG -Wall -std=c99 -o pidunu_dbg *.c -static
+
+test: build
+	py.test --capture=no
+
 clean:
 	-rm *.o
+
 check-syntax:
 	-gcc -Wall -std=c99 -o /dev/null  -S ${CHK_SOURCES}

@@ -19,7 +19,7 @@ def test_sigterm():
     container = client.create_container(
         image='ubuntu:latest',
         volumes=['/code/'],
-        command='/code/pidunu /usr/bin/python3 /code/test/term.py',
+        command='/code/pidunu_dbg /usr/bin/python3 /code/test/term.py',
         name="snowflake",
     )
     binds = {'/home/rciorba/repos/pidunu/': {'bind': '/code/', 'ro': True}}

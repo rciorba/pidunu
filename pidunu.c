@@ -7,7 +7,11 @@
 #include <signal.h>
 #include <errno.h>
 
+#ifdef _DEBUG
 #define DEBUG 1
+#else
+#define DEBUG 0
+#endif
 
 #define debug_print(fmt, ...)                   \
   do {                                          \
