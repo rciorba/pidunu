@@ -1,5 +1,3 @@
-""" Tests handling of sigterm.
-"""
 from __future__ import print_function
 
 from collections import defaultdict
@@ -34,9 +32,17 @@ def container_fixture(request):
 
 
 def test_sigterm(container_fixture):
+    """ Tests starting and stopping a container.
+
+    Starts a container running a python program that prints
+    to stdout any time it recieves a SIGTERM.
+
+    Asserts that init passes SIGTERM to the child process,
+    and that the child is reaped as expected.
+    """
     client, container = container_fixture
-    sleep(.1)
-    client.stop(container.get("Id"), timeout=0)
+    sleep(.2)
+    client.stop(container.get("Id"), timeout=1)
     logs = split_logs_by_pid(
         client.attach(container, stdout=True, logs=True))
     p1_logs = logs[1]
@@ -47,6 +53,7 @@ def test_sigterm(container_fixture):
         "pidunu:child_pid:{}".format(child_pid),
         "pidunu:pid_one",
         "pidunu:sig_handler; child_pid:{}".format(child_pid),
+        "pidunu:child_died:{}".format(child_pid),
     ]
     expected[child_pid] = [
         "pidunu:fork=>0:{}".format(child_pid),

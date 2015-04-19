@@ -11,6 +11,7 @@ from time import sleep
 def sigterm(_signal, _frame):
     sys.stdout.write("{}:term_py:SIGTERM\n".format(os.getpid()))
     sys.stdout.flush()
+    sys.exit(0)
 
 
 def child1():
