@@ -9,7 +9,7 @@ debug:
 	-gcc -g -D_DEBUG -Wall -std=c99 -o pidunu_dbg *.c -static
 
 test: debug
-	py.test --capture=no
+	py.test --capture=no test/
 
 clean:
 	-rm *.o
