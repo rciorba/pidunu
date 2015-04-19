@@ -52,6 +52,9 @@ int pid_one(pid_t child_pid) {
       debug_print("child_died:%d\n", pid);
       return 0;
     }
+    if(DEBUG)  // will get optimized away by the compiler
+      if(pid!=-1)  // ignore we might have no children in a suitable state
+        debug_print("reaped_orphan:%d\n", pid);
   }
 }
 
