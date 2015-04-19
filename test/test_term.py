@@ -5,6 +5,7 @@ from time import sleep
 
 import docker
 import pytest
+import os
 
 
 def split_logs_by_pid(logs):
@@ -17,17 +18,20 @@ def split_logs_by_pid(logs):
 
 @pytest.fixture
 def container_fixture(request):
-    client = docker.Client(base_url='unix://var/run/docker.sock')
+    docker_url = os.getenv('DOCKER_URL', 'unix://var/run/docker.sock')
+    docker_image = os.getenv('DOCKER_IMAGE', 'ubuntu:latest')
+    bind_mount = os.getenv('BIND_MOUNT_PATH', os.getcwd())
+    client = docker.Client(base_url=docker_url)
     container = client.create_container(
-        image='ubuntu:latest',
+        image=docker_image,
         volumes=['/code/'],
-        command='/code/pidunu_dbg /usr/bin/python3 /code/test/term.py',
+        command='/code/pidunu_dbg /usr/bin/python3 /code/test/bin/term.py',
         name="snowflake",
     )
-    binds = {'/home/rciorba/repos/pidunu/': {'bind': '/code/', 'ro': True}}
-    client.start(container.get("Id"), binds=binds)
     request.addfinalizer(
         lambda: client.remove_container(container.get("Id"), force=True))
+    binds = {bind_mount: {'bind': '/code/', 'ro': True}}
+    client.start(container.get("Id"), binds=binds)
     return client, container
 
 
@@ -44,7 +48,7 @@ def test_sigterm(container_fixture):
     sleep(.2)
     client.stop(container.get("Id"), timeout=1)
     logs = split_logs_by_pid(
-        client.attach(container, stdout=True, logs=True))
+        client.attach(container, stdout=True, stderr=True, logs=True))
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = {}
