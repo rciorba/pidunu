@@ -1,9 +1,12 @@
+""" Tests handling of sigterm.
+"""
 from __future__ import print_function
 
 from collections import defaultdict
 from time import sleep
 
 import docker
+import pytest
 
 
 def split_logs_by_pid(logs):
@@ -14,7 +17,8 @@ def split_logs_by_pid(logs):
     return dict(logs_by_pid)
 
 
-def test_sigterm():
+@pytest.fixture
+def container_fixture(request):
     client = docker.Client(base_url='unix://var/run/docker.sock')
     container = client.create_container(
         image='ubuntu:latest',
@@ -24,11 +28,17 @@ def test_sigterm():
     )
     binds = {'/home/rciorba/repos/pidunu/': {'bind': '/code/', 'ro': True}}
     client.start(container.get("Id"), binds=binds)
+    request.addfinalizer(
+        lambda: client.remove_container(container.get("Id"), force=True))
+    return client, container
+
+
+def test_sigterm(container_fixture):
+    client, container = container_fixture
     sleep(.1)
     client.stop(container.get("Id"), timeout=0)
     logs = split_logs_by_pid(
         client.attach(container, stdout=True, logs=True))
-    client.remove_container(container.get("Id"))
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = {}
