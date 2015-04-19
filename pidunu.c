@@ -1,5 +1,6 @@
 #define _POSIX_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -19,23 +20,27 @@
 
 pid_t g_child_pid = 0;
 
-static void sigint(int signo) {
+void sig_handler(int signo) {
+  debug_print("sig_handler; child_pid:%d\n", g_child_pid);
   if (g_child_pid > 1) {
-    kill(g_child_pid, SIGINT);
+    kill(g_child_pid, signo);
   }
-  signal(SIGINT, sigint); // re-registr the signal
+  signal(signo, sig_handler); // re-registr the signal
 }
 
-void setup_signals(pid_t child_pid){
+void setup_signals(pid_t child_pid) {
   g_child_pid = child_pid;
-  signal(SIGINT, sigint);
+  if (signal(SIGTERM, sig_handler) == SIG_ERR) {
+    debug_print("failed to setup SIGTERM; errno:%d", errno);
+    exit(-2);
+  };
 }
 
 int pid_one(pid_t child_pid) {
   int status;
   pid_t pid;
-  setup_signals(child_pid);
   debug_print("%s\n", "pid_one");
+  setup_signals(child_pid);
   while(1) {
     pid = wait(&status);
     if (pid == child_pid){

@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from collections import defaultdict
+from time import sleep
 
 import docker
 
@@ -23,7 +24,8 @@ def test_sigterm():
     )
     binds = {'/home/rciorba/repos/pidunu/': {'bind': '/code/', 'ro': True}}
     client.start(container.get("Id"), binds=binds)
-    client.stop(container.get("Id"), timeout=1)
+    sleep(.1)
+    client.stop(container.get("Id"), timeout=0)
     logs = split_logs_by_pid(
         client.attach(container, stdout=True, logs=True))
     client.remove_container(container.get("Id"))
@@ -34,6 +36,7 @@ def test_sigterm():
         "pidunu:main",
         "pidunu:child_pid:{}".format(child_pid),
         "pidunu:pid_one",
+        "pidunu:sig_handler; child_pid:{}".format(child_pid),
     ]
     expected[child_pid] = [
         "pidunu:fork=>0:{}".format(child_pid),
