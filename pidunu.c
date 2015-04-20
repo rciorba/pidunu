@@ -29,33 +29,86 @@ void sig_handler(int signo) {
   if (g_child_pid > 1) {
     kill(g_child_pid, signo);
   }
-  signal(signo, sig_handler); // re-registr the signal
+}
+
+void reg_signal(int sig) {
+  if (signal(sig, sig_handler) == SIG_ERR) {
+    debug_print("failed to setup signal %d errno:%d", sig, errno);
+    exit(-2);
+  }
 }
 
 void setup_signals(pid_t child_pid) {
   g_child_pid = child_pid;
-  if (signal(SIGTERM, sig_handler) == SIG_ERR) {
-    debug_print("failed to setup SIGTERM; errno:%d", errno);
-    exit(-2);
-  };
+  // See signals in docker:
+  // https://github.com/docker/docker/blob/487a417d9fd074d0e78876072c7d1ebfd398ea7a/pkg/signal/signal_linux.go
+  // Can't register SIGKILL and SIGSTOP
+  reg_signal(SIGABRT);
+  reg_signal(SIGALRM);
+  reg_signal(SIGBUS);
+  reg_signal(SIGCHLD);
+  reg_signal(SIGCLD);
+  reg_signal(SIGCONT);
+  reg_signal(SIGFPE);
+  reg_signal(SIGHUP);
+  reg_signal(SIGILL);
+  reg_signal(SIGINT);
+  reg_signal(SIGIO);
+  reg_signal(SIGIOT);
+  //reg_signal(SIGKILL);
+  reg_signal(SIGPIPE);
+  reg_signal(SIGPOLL);
+  reg_signal(SIGPROF);
+  reg_signal(SIGPWR);
+  reg_signal(SIGQUIT);
+  reg_signal(SIGSEGV);
+  reg_signal(SIGSTKFLT);
+  //reg_signal(SIGSTOP);
+  reg_signal(SIGSYS);
+  reg_signal(SIGTERM);
+  reg_signal(SIGTRAP);
+  reg_signal(SIGTSTP);
+  reg_signal(SIGTTIN);
+  reg_signal(SIGTTOU);
+  reg_signal(SIGUNUSED);
+  reg_signal(SIGURG);
+  reg_signal(SIGUSR1);
+  reg_signal(SIGUSR2);
+  reg_signal(SIGVTALRM);
+  reg_signal(SIGWINCH);
+  reg_signal(SIGXCPU);
+  reg_signal(SIGXFSZ);
 }
 
 int pid_one(pid_t child_pid) {
-  int status;
+  int status, cstatus;
   pid_t pid;
   debug_print("%s\n", "pid_one");
   setup_signals(child_pid);
-  while(1) {
+
+  while (1) {
     pid = wait(&status);
-    if (pid == child_pid) {
-      // the spawned child just terminated
-      debug_print("child_died:%d\n", pid);
-      return 0;
+    if (pid < 0) {
+      debug_print("wait error: %d / %d\n", pid, errno);
+      return -1;
     }
-    if(DEBUG)  // will get optimized away by the compiler
-      if(pid!=-1)  // ignore we might have no children in a suitable state
-        debug_print("reaped_orphan:%d\n", pid);
+    if (pid != 1) {
+      debug_print("reaped_orphan:%d\n", pid);
+    }
+    // Stop the loop if the PID is the one of our child process
+    if (pid == child_pid) {
+      debug_print("child_pid exited: %d\n", status);
+      cstatus = status;
+      break;
+    }
   }
+  while ( (pid = waitpid(-1, NULL, WNOHANG)) >= 0) {
+    // Reap potential other processes
+    debug_print("reaped additional orphan:%d\n", pid);
+  }
+  // Return the child's process exit code
+  debug_print("exit with statuscode: %d\n", WEXITSTATUS(cstatus));
+  return WEXITSTATUS(cstatus);
 }
 
 void execute(int argc, char** argv) {
