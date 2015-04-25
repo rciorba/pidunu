@@ -2,10 +2,12 @@ from __future__ import print_function
 
 from collections import defaultdict
 from time import sleep
+import os
+import signal
+import re
 
 import docker
 import pytest
-import os
 
 
 def split_logs_by_pid(logs):
@@ -59,7 +61,7 @@ def test_sigterm(container_fixture):
         "pidunu:main",
         "pidunu:child_pid:{}".format(child_pid),
         "pidunu:pid_one",
-        "pidunu:sig_handler; child_pid:{}".format(child_pid),
+        "pidunu:sig_handler:{}".format(signal.SIGTERM),
         "pidunu:child_died:{}".format(child_pid),
     ]
     expected[child_pid] = [
@@ -104,3 +106,37 @@ def test_reaping(container_fixture):
         "child3 is done",
     ]
     assert logs == expected
+
+
+def test_signals(container_fixture):
+    """ Tests signal handling.
+    """
+    client, container = container_fixture
+    sleep(.2)
+    signame_re = re.compile("^SIG[A-Z0-9]+$")
+    expected_child_output = []
+    blacklist = (
+        "SIGSTOP", "SIGKILL",  # can't be registered
+        "SIGRTMIN", "SIGRTMAX",  # max and min for posix realtime signals
+        "SIGIOT",  # duplicate of SIGABRT
+        "SIGPOLL",  # duplicate of SIGIO
+        "SIGCHLD", "SIGCLD",  # pidunu will not pass these on
+    )
+    signals = [(name, getattr(signal, name)) for name in dir(signal)
+               if signame_re.match(name) and name not in blacklist]
+    signals += [("SIGSTKFLT", 16), ]
+    for name, signo in signals:
+        expected_child_output.append(
+            "signals:{}:{}".format(name, signo))
+        client.kill(container.get("Id"), signo)
+        sleep(0.01)
+    logs = split_logs_by_pid(
+        client.attach(container, stdout=True, stderr=True, logs=True))
+    p1_logs = logs[1]
+    child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
+    expected = [
+        "pidunu:fork=>0:{}".format(child_pid),
+        "pidunu:exec:/usr/bin/python3",
+        "signals:start",
+    ] + expected_child_output
+    assert logs[child_pid] == expected

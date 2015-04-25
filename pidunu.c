@@ -25,19 +25,57 @@
 pid_t g_child_pid = 0;
 
 void sig_handler(int signo) {
-  debug_print("sig_handler; child_pid:%d\n", g_child_pid);
+  debug_print("sig_handler:%d\n", signo);
   if (g_child_pid > 1) {
     kill(g_child_pid, signo);
   }
   signal(signo, sig_handler); // re-registr the signal
 }
 
-void setup_signals(pid_t child_pid) {
-  g_child_pid = child_pid;
-  if (signal(SIGTERM, sig_handler) == SIG_ERR) {
-    debug_print("failed to setup SIGTERM; errno:%d", errno);
+void register_signal(int signo, const char* signame){
+  if (signal(signo, sig_handler) == SIG_ERR) {
+    debug_print("failed to setup %s; errno:%d", signame, errno);
     exit(-2);
   };
+}
+
+void setup_signals(pid_t child_pid) {
+  g_child_pid = child_pid;
+  register_signal(SIGABRT, "SIGABRT");
+  register_signal(SIGALRM, "SIGALRM");
+  register_signal(SIGBUS, "SIGBUS");
+  /* if we have an inherited child die, don't send SIGCHLD to the spawned child
+  register_signal(SIGCHLD, "SIGCHLD");
+  register_signal(SIGCLD, "SIGCLD"); */
+  register_signal(SIGCONT, "SIGCONT");
+  register_signal(SIGFPE, "SIGFPE");
+  register_signal(SIGHUP, "SIGHUP");
+  register_signal(SIGILL, "SIGILL");
+  register_signal(SIGINT, "SIGINT");
+  register_signal(SIGIO, "SIGIO");
+  /* register_signal(SIGIOT, "SIGIOT"); same as SIGABRT */
+  register_signal(SIGPIPE, "SIGPIPE");
+  /* register_signal(SIGPOLL, "SIGPOLL"); same as SIGIO*/
+  register_signal(SIGPROF, "SIGPROF");
+  register_signal(SIGPWR, "SIGPWR");
+  register_signal(SIGQUIT, "SIGQUIT");
+  register_signal(SIGSEGV, "SIGSEGV");
+  register_signal(SIGSTKFLT, "SIGSTKFLT");
+  /* register_signal(SIGSTOP, "SIGSTOP"); can't be caught*/
+  register_signal(SIGSYS, "SIGSYS");
+  register_signal(SIGTERM, "SIGTERM");
+  register_signal(SIGTRAP, "SIGTRAP");
+  register_signal(SIGTSTP, "SIGTSTP");
+  register_signal(SIGTTIN, "SIGTTIN");
+  register_signal(SIGTTOU, "SIGTTOU");
+  /* register_signal(SIGUNUSED, "SIGUNUSED"); same as SIGSYS*/
+  register_signal(SIGURG, "SIGURG");
+  register_signal(SIGUSR1, "SIGUSR1");
+  register_signal(SIGUSR2, "SIGUSR2");
+  register_signal(SIGVTALRM, "SIGVTALRM");
+  register_signal(SIGWINCH, "SIGWINCH");
+  register_signal(SIGXCPU, "SIGXCPU");
+  register_signal(SIGXFSZ, "SIGXFSZ");
 }
 
 int pid_one(pid_t child_pid) {
