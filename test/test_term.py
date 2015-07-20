@@ -18,6 +18,27 @@ def split_logs_by_pid(logs):
     return dict(logs_by_pid)
 
 
+
+class StreamHandler(object):
+    def __init__(self, stream):
+        self.stream = stream
+        self.lines = []
+
+    def wait(self, regexp=None):
+        for line in self.stream:
+            self.lines.append(line)
+            if regexp is not None and regexp.match(line):
+                break
+
+    def split_logs_by_pid(self):
+        logs_by_pid = defaultdict(list)
+        for line in self.lines:
+            print(line)
+            pid, msg = line.split(":", 1)
+            logs_by_pid[int(pid)].append(msg.strip())
+        return dict(logs_by_pid)
+
+
 @pytest.fixture
 def container_fixture(request):
     docker_url = os.getenv('DOCKER_URL', 'unix://var/run/docker.sock')
@@ -50,10 +71,12 @@ def test_sigterm(container_fixture):
     and that the child is reaped as expected.
     """
     client, container = container_fixture
-    sleep(.2)
+    stream = StreamHandler(
+        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream.wait(re.compile("\d+:term_py:start\n"))
     client.stop(container.get("Id"), timeout=1)
-    logs = split_logs_by_pid(
-        client.attach(container, stdout=True, stderr=True, logs=True))
+    stream.wait()
+    logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = {}
@@ -61,7 +84,7 @@ def test_sigterm(container_fixture):
         "pidunu:main",
         "pidunu:child_pid:{}".format(child_pid),
         "pidunu:pid_one",
-        "pidunu:sig_handler:{}".format(signal.SIGTERM),
+        # "pidunu:sig_handler:{}".format(signal.SIGTERM),
         "pidunu:child_died:{}".format(child_pid),
     ]
     expected[child_pid] = [
@@ -85,9 +108,10 @@ def test_reaping(container_fixture):
     Asserts that init reaps orphaned process child3.
     """
     client, container = container_fixture
-    sleep(.5)
-    logs = split_logs_by_pid(
-        client.attach(container, stdout=True, stderr=True, logs=True))
+    stream = StreamHandler(
+        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream.wait()
+    logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = {}
@@ -112,7 +136,9 @@ def test_signals(container_fixture):
     """ Tests signal handling.
     """
     client, container = container_fixture
-    sleep(.2)
+    stream = StreamHandler(
+        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream.wait(re.compile(r"\d+:signals:start\n"))
     signame_re = re.compile("^SIG[A-Z0-9]+$")
     expected_child_output = []
     blacklist = (
@@ -126,12 +152,12 @@ def test_signals(container_fixture):
                if signame_re.match(name) and name not in blacklist]
     signals += [("SIGSTKFLT", 16), ]
     for name, signo in signals:
-        expected_child_output.append(
-            "signals:{}:{}".format(name, signo))
+        expected_line = "signals:{}:{}".format(name, signo)
+        expected_child_output.append(expected_line)
         client.kill(container.get("Id"), signo)
-        sleep(0.01)
-    logs = split_logs_by_pid(
-        client.attach(container, stdout=True, stderr=True, logs=True))
+        print("expected: {}".format(expected_line))
+        stream.wait(re.compile(".*"+expected_line))
+    logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = [

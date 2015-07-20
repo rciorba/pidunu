@@ -25,7 +25,7 @@
 pid_t g_child_pid = 0;
 
 void sig_handler(int signo) {
-  debug_print("sig_handler:%d\n", signo);
+  /* debug_print("sig_handler:%d\n", signo); */
   if (g_child_pid > 1) {
     kill(g_child_pid, signo);
   }
