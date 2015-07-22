@@ -10,32 +10,27 @@ import docker
 import pytest
 
 
-def split_logs_by_pid(logs):
-    logs_by_pid = defaultdict(list)
-    for line in logs.splitlines():
-        pid, msg = line.split(":", 1)
-        logs_by_pid[int(pid)].append(msg)
-    return dict(logs_by_pid)
-
-
-
 class StreamHandler(object):
-    def __init__(self, stream):
-        self.stream = stream
-        self.lines = []
+    def __init__(self, client, container):
+        self.client = client
+        self.container = container
+        self.stream = client.attach(container, stdout=True, stderr=True, logs=True, stream=True)
 
     def wait(self, regexp=None):
         for line in self.stream:
-            self.lines.append(line)
             if regexp is not None and regexp.match(line):
                 break
 
     def split_logs_by_pid(self):
+        """Parse the log lines and split by pid.
+        Re-fetches the logs to avoid mixed lines in the stream.
+        """
+        logs = self.client.attach(
+            self.container, stdout=True, stderr=True, logs=True, stream=False)
         logs_by_pid = defaultdict(list)
-        for line in self.lines:
-            print(line)
+        for line in logs.splitlines():
             pid, msg = line.split(":", 1)
-            logs_by_pid[int(pid)].append(msg.strip())
+            logs_by_pid[int(pid)].append(msg)
         return dict(logs_by_pid)
 
 
@@ -71,8 +66,7 @@ def test_sigterm(container_fixture):
     and that the child is reaped as expected.
     """
     client, container = container_fixture
-    stream = StreamHandler(
-        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream = StreamHandler(client, container)
     stream.wait(re.compile("\d+:term_py:start\n"))
     client.stop(container.get("Id"), timeout=1)
     stream.wait()
@@ -107,9 +101,7 @@ def test_reaping(container_fixture):
 
     Asserts that init reaps orphaned process child3.
     """
-    client, container = container_fixture
-    stream = StreamHandler(
-        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream = StreamHandler(*container_fixture)
     stream.wait()
     logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
@@ -136,8 +128,7 @@ def test_signals(container_fixture):
     """ Tests signal handling.
     """
     client, container = container_fixture
-    stream = StreamHandler(
-        client.attach(container, stdout=True, stderr=True, logs=True, stream=True))
+    stream = StreamHandler(client, container)
     stream.wait(re.compile(r"\d+:signals:start\n"))
     signame_re = re.compile("^SIG[A-Z0-9]+$")
     expected_child_output = []
