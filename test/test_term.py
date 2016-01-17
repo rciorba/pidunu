@@ -42,7 +42,7 @@ def container_fixture(request):
     test_bin = '/code/pidunu_dbg /usr/bin/python3 /code/test/bin/{}.py'.format(
         request.function.__name__.replace("test_", "", 1)
     )
-    client = docker.Client(base_url=docker_url)
+    client = docker.Client(base_url=docker_url, version='auto')
     container = client.create_container(
         image=docker_image,
         volumes=['/code/'],
