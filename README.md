@@ -1,5 +1,5 @@
 ## Pidunu - a trivial init process, for use in Docker containers.
-
+[![Build Status](https://travis-ci.org/rciorba/pidunu.svg?branch=master)](https://travis-ci.org/rciorba/pidunu)
 
 ### How to use it
 Simply add pidunu to all your docker containers, and make it run your desired command:
