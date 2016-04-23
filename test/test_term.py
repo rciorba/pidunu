@@ -157,3 +157,10 @@ def test_signals(container_fixture):
         "signals:start",
     ] + expected_child_output
     assert logs[child_pid] == expected
+
+
+def test_return_code(container_fixture):
+    """ Test return code is proxied correctly.
+    """
+    client, container = container_fixture
+    assert client.wait(container) == 42
