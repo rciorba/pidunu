@@ -1,2 +1,2 @@
-docker-py==1.0.0
-pytest==2.6.4
+docker-py==1.8.0
+pytest==2.9.1
