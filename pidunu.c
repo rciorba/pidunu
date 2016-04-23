@@ -86,7 +86,6 @@ int pid_one(pid_t child_pid) {
   setup_signals(child_pid);
   while(1) {
     pid = wait(&status);
-    debug_print(">>>> status is:%d\n", WEXITSTATUS(status));
     if (pid == child_pid) {
       // the spawned child just terminated
       debug_print("child_died:%d\n", pid);
