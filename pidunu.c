@@ -104,7 +104,7 @@ void execute(int argc, char** argv) {
   char* cmd = argv[1];
   char** args = argv+1;
   debug_print("exec:%s\n", cmd);
-  if (execv(cmd, args) == -1) {
+  if (execvp(cmd, args) == -1) {
     fprintf(stderr, "failed to exec %s, errno is %d\n", cmd, errno);
   }
 }
