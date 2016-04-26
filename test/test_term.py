@@ -37,7 +37,7 @@ class StreamHandler(object):
 @pytest.fixture
 def container_fixture(request):
     docker_url = os.getenv('DOCKER_URL', 'unix://var/run/docker.sock')
-    docker_image = os.getenv('DOCKER_IMAGE', 'ubuntu:latest')
+    docker_image = os.getenv('DOCKER_IMAGE', 'ubuntu:14.04')
     bind_mount = os.getenv('BIND_MOUNT_PATH', os.getcwd())
     test_bin = '/code/pidunu_dbg /usr/bin/python3 /code/test/bin/{}.py'.format(
         request.function.__name__.replace("test_", "", 1)

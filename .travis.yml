@@ -3,13 +3,13 @@ python:
   - "2.7"
 
 install:
-  - "pip install pytest docker-py"
+  - "pip install -r ./test/dependencies.txt"
 
 services:
   - docker
 
 before_install:
-  - docker pull ubuntu:latest
+  - docker pull ubuntu:14.04
 
 script: make test
 
