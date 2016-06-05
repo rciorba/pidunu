@@ -146,7 +146,6 @@ def test_signals(container_fixture):
         expected_line = "signals:{}:{}".format(name, signo)
         expected_child_output.append(expected_line)
         client.kill(container.get("Id"), signo)
-        print("expected: {}".format(expected_line))
         stream.wait(re.compile(".*"+expected_line))
     logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
