@@ -76,14 +76,14 @@ def test_sigterm(container_fixture):
     expected = {}
     expected[1] = [
         "pidunu:main",
-        "pidunu:child_pid:{}".format(child_pid),
+        "pidunu:child_pid: {}".format(child_pid),
         "pidunu:pid_one",
         # "pidunu:sig_handler:{}".format(signal.SIGTERM),
-        "pidunu:child_died:{}".format(child_pid),
+        "pidunu:child_died: {}".format(child_pid),
     ]
     expected[child_pid] = [
-        "pidunu:fork=>0:{}".format(child_pid),
-        "pidunu:exec:/usr/bin/python3",
+        "pidunu:fork=>0: {}".format(child_pid),
+        "pidunu:exec: /usr/bin/python3",
         "term_py:start",
         "term_py:SIGTERM",
     ]
@@ -109,14 +109,14 @@ def test_reaping(container_fixture):
     expected = {}
     expected[1] = [
         "pidunu:main",
-        "pidunu:child_pid:{}".format(child_pid),
+        "pidunu:child_pid: {}".format(child_pid),
         "pidunu:pid_one",
-        "pidunu:reaped_orphan:{}".format(child_pid+2),
-        "pidunu:child_died:{}".format(child_pid),
+        "pidunu:reaped_orphan: {}".format(child_pid+2),
+        "pidunu:child_died: {}".format(child_pid),
     ]
     expected[child_pid] = [
-        "pidunu:fork=>0:{}".format(child_pid),
-        "pidunu:exec:/usr/bin/python3",
+        "pidunu:fork=>0: {}".format(child_pid),
+        "pidunu:exec: /usr/bin/python3",
     ]
     expected[child_pid+2] = [
         "child3 is done",
@@ -146,14 +146,13 @@ def test_signals(container_fixture):
         expected_line = "signals:{}:{}".format(name, signo)
         expected_child_output.append(expected_line)
         client.kill(container.get("Id"), signo)
-        print("expected: {}".format(expected_line))
         stream.wait(re.compile(".*"+expected_line))
     logs = stream.split_logs_by_pid()
     p1_logs = logs[1]
     child_pid = int(p1_logs[1].rsplit(":", 1)[-1])
     expected = [
-        "pidunu:fork=>0:{}".format(child_pid),
-        "pidunu:exec:/usr/bin/python3",
+        "pidunu:fork=>0: {}".format(child_pid),
+        "pidunu:exec: /usr/bin/python3",
         "signals:start",
     ] + expected_child_output
     assert logs[child_pid] == expected

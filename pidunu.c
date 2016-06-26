@@ -35,7 +35,7 @@ void sig_handler(int signo) {
 
 void register_signal(int signo, const char* signame){
   if (signal(signo, sig_handler) == SIG_ERR) {
-    debug_print("failed to setup %s; errno:%d", signame, errno);
+    debug_print("failed to setup %s; errno: %d", signame, errno);
     exit(-2);
   };
 }
@@ -88,12 +88,12 @@ int pid_one(pid_t child_pid) {
     pid = wait(&status);
     if (pid == child_pid) {
       // the spawned child just terminated
-      debug_print("child_died:%d\n", pid);
+      debug_print("child_died: %d\n", pid);
       return WEXITSTATUS(status);
     }
     if(DEBUG)  // will get optimized away by the compiler
       if(pid!=-1)  // ignore we might have no children in a suitable state
-        debug_print("reaped_orphan:%d\n", pid);
+        debug_print("reaped_orphan: %d\n", pid);
   }
   return 256;
 }
@@ -103,7 +103,7 @@ void execute(int argc, char** argv) {
     return;
   char* cmd = argv[1];
   char** args = argv+1;
-  debug_print("exec:%s\n", cmd);
+  debug_print("exec: %s\n", cmd);
   if (execvp(cmd, args) == -1) {
     fprintf(stderr, "failed to exec %s, errno is %d\n", cmd, errno);
   }
@@ -116,10 +116,10 @@ int main(int argc, char** argv) {
     fprintf(stderr, "failed to fork, errno: %d\n", errno);
     return EX_OSERR;
   } else if (pid > 0) {
-    debug_print("child_pid:%d\n", pid);
+    debug_print("child_pid: %d\n", pid);
     return pid_one(pid);
   } else if (pid == 0) {
-    debug_print("fork=>0:%d\n", getpid());
+    debug_print("fork=>0: %d\n", getpid());
     execute(argc, argv);
     return EX_OSERR; // program should have called exec and we should never get here
   }
